@@ -7,6 +7,12 @@ class Capability
       cap.get_proc
       return cap
     end
+
+    def get_pid(pid)
+      cap = new
+      cap.get_pid(pid)
+      return cap
+    end
   end
 
   def to_s
