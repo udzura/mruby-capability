@@ -42,6 +42,7 @@
 #define DONE    mrb_gc_arena_restore(mrb, 0);
 
 typedef struct {
+    pid_t pid;
     cap_t cap;
     cap_value_t capval[CAP_NUM];
 } mrb_cap_context;
@@ -75,6 +76,7 @@ mrb_value mrb_cap_init(mrb_state *mrb, mrb_value self)
 
     prctl(PR_SET_KEEPCAPS, 1);
     cap_ctx->cap = cap_init();
+    cap_ctx->pid = -1;
 
     mrb_iv_set(mrb
         , self
@@ -128,6 +130,9 @@ mrb_value mrb_cap_get(mrb_state *mrb, mrb_value self)
     mrb_cap_context *cap_ctx = mrb_cap_get_context(mrb, self, "mrb_cap_context");
 
     cap_ctx->cap = cap_get_proc();
+    if(cap_ctx->cap != NULL) {
+        cap_ctx->pid = getpid();
+    }
 
     mrb_iv_set(mrb
         , self
@@ -150,6 +155,9 @@ mrb_value mrb_cap_get_pid(mrb_state *mrb, mrb_value self)
     mrb_get_args(mrb, "i", &pid);
 
     cap_ctx->cap = cap_get_pid(pid);
+    if(cap_ctx->cap != NULL) {
+        cap_ctx->pid = pid;
+    }
 
     mrb_iv_set(mrb
         , self
@@ -249,6 +257,12 @@ mrb_value mrb_cap_to_text(mrb_state *mrb, mrb_value self)
     }
 
     return mrb_str_new_cstr(mrb, to_s);
+}
+
+mrb_value mrb_cap_current_pid(mrb_state *mrb, mrb_value self)
+{
+    mrb_cap_context *cap_ctx = mrb_cap_get_context(mrb, self, "mrb_cap_context");
+    return mrb_fixnum_value(cap_ctx->pid);
 }
 
 // test
@@ -360,6 +374,7 @@ void mrb_mruby_capability_gem_init(mrb_state *mrb)
     mrb_define_method(mrb, capability, "set_flag",      mrb_cap_set_flag,   MRB_ARGS_ANY());
     mrb_define_method(mrb, capability, "free",          mrb_cap_free,       MRB_ARGS_NONE());
     mrb_define_method(mrb, capability, "to_text",       mrb_cap_to_text,    MRB_ARGS_NONE());
+    mrb_define_method(mrb, capability, "pid",           mrb_cap_current_pid, MRB_ARGS_NONE());
 
     // class methods
     mrb_define_class_method(mrb, capability, "get_bound",  mrb_cap_get_bound,    MRB_ARGS_REQ(1));
