@@ -142,6 +142,28 @@ mrb_value mrb_cap_get(mrb_state *mrb, mrb_value self)
     return self;
 }
 
+mrb_value mrb_cap_get_pid(mrb_state *mrb, mrb_value self)
+{
+    mrb_cap_context *cap_ctx = mrb_cap_get_context(mrb, self, "mrb_cap_context");
+
+    pid_t pid;
+    mrb_get_args(mrb, "i", &pid);
+
+    cap_ctx->cap = cap_get_pid(pid);
+
+    mrb_iv_set(mrb
+        , self
+        , mrb_intern_cstr(mrb, "mrb_cap_context")
+        , mrb_obj_value(Data_Wrap_Struct(mrb
+            , mrb->object_class
+            , &mrb_cap_context_type
+            , (void *)cap_ctx)
+        )
+    );
+
+    return self;
+}
+
 mrb_value mrb_cap_clear(mrb_state *mrb, mrb_value self)
 {
     mrb_cap_context *cap_ctx = mrb_cap_get_context(mrb, self, "mrb_cap_context");
@@ -330,6 +352,7 @@ void mrb_mruby_capability_gem_init(mrb_state *mrb)
     mrb_define_method(mrb, capability, "initialize",    mrb_cap_init,       MRB_ARGS_NONE());
     mrb_define_method(mrb, capability, "get",           mrb_cap_get,        MRB_ARGS_NONE());
     mrb_define_method(mrb, capability, "get_proc",      mrb_cap_get,        MRB_ARGS_NONE());
+    mrb_define_method(mrb, capability, "get_pid",       mrb_cap_get_pid,    MRB_ARGS_NONE());
     mrb_define_method(mrb, capability, "set",           mrb_cap_set,        MRB_ARGS_ANY());
     mrb_define_method(mrb, capability, "set_proc",      mrb_cap_set,        MRB_ARGS_ANY());
     mrb_define_method(mrb, capability, "clear",         mrb_cap_clear,      MRB_ARGS_ANY());
